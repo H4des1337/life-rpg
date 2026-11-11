@@ -61,7 +61,51 @@ export function ensurePaths(paths: AppPaths): void {
   }
 }
 
+export function loadConfig(): ServerConfig {
+  const paths = resolvePaths();
+  return {
+    host: resolveBindHost(),
+    port: Number(process.env.PORT || 3000),
+    paths,
+    webDist:
+      process.env.LIFERPG_WEB_DIST ||
+      fileURLToPath(new URL('../../web/dist', import.meta.url)),
+    autoBackup: process.env.LIFERPG_DISABLE_AUTO_BACKUP !== '1',
+    logLevel: process.env.LOG_LEVEL || 'info',
+  };
+}
+
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+
+const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
+
+function isLoopbackHost(host: string): boolean {
+  return LOOPBACK_HOSTS.has(host) || host === '0000:0000:0000:0000:0000:0000:0000:0001';
+}
+
+/**
+ * Resolves the effective bind host with native local-only enforcement.
+ *
+ * Native (non-Docker) execution binds exclusively to 127.0.0.1. The HOST
+ * environment variable cannot override this to a non-loopback address —
+ * Host-header validation alone is insufficient because headers can be forged.
+ *
+ * Docker container runtime (LIFERPG_DOCKER=1) may bind to 0.0.0.0 so that
+ * Docker bridge port forwarding works; host-side publication remains
+ * 127.0.0.1:3000 via docker-compose.
+ */
+export function resolveBindHost(): string {
+  const configured = process.env.HOST?.trim() || '127.0.0.1';
+  const isDocker = process.env.LIFERPG_DOCKER === '1';
+
+  if (!isDocker && !isLoopbackHost(configured)) {
+    throw new Error(
+      `Refusing to bind to non-loopback host '${configured}'. LIFE RPG binds exclusively to 127.0.0.1 for native execution. Use LIFERPG_DOCKER=1 only inside a container.`,
+    );
+  }
+
+  return configured;
+}
 
 export const ALLOWED_MIME_TYPES = new Set([
   'application/pdf',
@@ -121,18 +165,4 @@ export interface ServerConfig {
   webDist: string;
   autoBackup: boolean;
   logLevel: string;
-}
-
-export function loadConfig(): ServerConfig {
-  const paths = resolvePaths();
-  return {
-    host: process.env.HOST || '127.0.0.1',
-    port: Number(process.env.PORT || 3000),
-    paths,
-    webDist:
-      process.env.LIFERPG_WEB_DIST ||
-      fileURLToPath(new URL('../../web/dist', import.meta.url)),
-    autoBackup: process.env.LIFERPG_DISABLE_AUTO_BACKUP !== '1',
-    logLevel: process.env.LOG_LEVEL || 'info',
-  };
 }

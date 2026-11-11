@@ -7,11 +7,13 @@
 # ---------------------------------------------------------------------------
 FROM node:22-alpine AS web-build
 WORKDIR /app
-# Install web workspace dependencies
+# Copy root manifest and lockfile for reproducible dependency installation.
 COPY package.json package-lock.json ./
-COPY apps/web/package.json ./apps/web/package.json
-RUN npm install --workspace=@liferpg/web --omit=dev
+# Copy the web workspace source so npm can set up workspace symlinks.
 COPY apps/web ./apps/web
+# Install web workspace dependencies including devDependencies (Vite, plugin-react).
+RUN npm install --workspace=@liferpg/web --include=dev --package-lock-only
+RUN npm install --workspace=@liferpg/web --include=dev
 RUN npx vite build --config apps/web/vite.config.ts
 
 # ---------------------------------------------------------------------------
@@ -47,11 +49,15 @@ COPY --from=web-build /app/apps/web/dist ./apps/web/dist
 
 # Data directory for SQLite + attachments (persisted via volume)
 ENV LIFERPG_DATA_DIR=/data/liferpg
-# Bind to loopback only
-ENV HOST=127.0.0.1
+# In Docker, bind to the container interface (0.0.0.0) so Docker bridge
+# port forwarding works. Host-side publication remains 127.0.0.1:3000 via
+# docker-compose. Native (non-Docker) execution binds exclusively to 127.0.0.1.
+ENV HOST=0.0.0.0
 ENV PORT=3000
 # Auto-backup enabled by default
 ENV LIFERPG_DISABLE_AUTO_BACKUP=0
+# Flag indicating container runtime; relaxes native loopback-only host binding.
+ENV LIFERPG_DOCKER=1
 
 # Create data dir and set ownership
 RUN mkdir -p /data/liferpg && chown -R node:node /data /app

@@ -11,10 +11,13 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     environment:
-      - HOST=127.0.0.1
+      # Container-internal binding is 0.0.0.0 so Docker bridge forwarding works.
+      # Host-side publication is restricted to 127.0.0.1:3000 below.
+      - HOST=0.0.0.0
       - PORT=3000
       - LIFERPG_DATA_DIR=/data/liferpg
       - LIFERPG_DISABLE_AUTO_BACKUP=0
+      - LIFERPG_DOCKER=1
     volumes:
       # Persistent database, settings, encrypted keys, backups
       - liferpg-data:/data/liferpg

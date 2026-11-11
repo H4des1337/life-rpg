@@ -85,5 +85,11 @@ See `AI_SYSTEM.md` for details.
 
 - Multi-stage build: web-build → server-build → runner
 - Runner image is `node:22-alpine` with runtime deps only
-- Container binds `127.0.0.1:3000`; compose publishes `127.0.0.1:3000:3000`
+- **Container internal binding:** `0.0.0.0:3000` (Docker bridge interface,
+  required for port forwarding to work)
+- **Host publication:** `127.0.0.1:3000:3000` via docker-compose (localhost
+  only — never `0.0.0.0` on the host)
 - Data persisted via `liferpg-data` named volume mounted at `/data/liferpg`
+- `LIFERPG_DOCKER=1` env var set inside container; `config.ts` allows
+  `0.0.0.0` binding only when this flag is set. Native execution always binds
+  to `127.0.0.1`.

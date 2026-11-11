@@ -610,4 +610,261 @@ describe('progression invariants (WPF parity)', () => {
     ).lifetime_xp;
     expect(afterSubXp - beforeSubXp).toBe(35); // Math.floor(100 × 0.35)
   });
+
+  it('applies 2:1 parity to multiple attribute allocations', async () => {
+    const beforeAttr1 = attrXp('attr-competence');
+    const beforeAttr2 = attrXp('attr-intellect');
+    const beforePlayer = playerXp();
+
+    // playerXp = 100, allocations [100, 100] sum to 200 = 2 × 100 already.
+    const created = await logActivity({
+      title: 'Multi-attribute parity',
+      playerXp: 100,
+      category: 'Testing',
+      allocations: [
+        { targetType: 'attribute', targetId: 'attr-competence', targetName: 'Competence', xp: 100 },
+        { targetType: 'attribute', targetId: 'attr-intellect', targetName: 'Intellect', xp: 100 },
+      ],
+    });
+    expect(created.status).toBe(201);
+    expect(created.body.activity.playerXp).toBe(100);
+
+    expect(attrXp('attr-competence') - beforeAttr1).toBe(100);
+    expect(attrXp('attr-intellect') - beforeAttr2).toBe(100);
+    expect(playerXp() - beforePlayer).toBe(100);
+    // Total attribute XP = 200 = 2 × player XP.
+    expect((attrXp('attr-competence') - beforeAttr1) + (attrXp('attr-intellect') - beforeAttr2)).toBe(200);
+  });
+
+  it('scales multiple attribute allocations to 2:1 when sum differs', async () => {
+    const beforeAttr = attrXp('attr-social');
+    const beforePlayer = playerXp();
+
+    // playerXp = 100, allocations [150, 50] sum to 200 = 2 × 100 already.
+    const created = await logActivity({
+      title: 'Multi-attribute scale',
+      playerXp: 100,
+      category: 'Testing',
+      allocations: [
+        { targetType: 'attribute', targetId: 'attr-social', targetName: 'Social', xp: 150 },
+        { targetType: 'attribute', targetId: 'attr-social', targetName: 'Social', xp: 50 },
+      ],
+    });
+    expect(created.status).toBe(201);
+    expect(created.body.activity.playerXp).toBe(100);
+    expect(attrXp('attr-social') - beforeAttr).toBe(200);
+    expect(playerXp() - beforePlayer).toBe(100);
+  });
+
+  it('applies 2:1 parity after diminishing with multiple allocations', async () => {
+    const beforeAttr = attrXp('attr-character');
+    const beforePlayer = playerXp();
+
+    // First activity establishes the fingerprint for diminishing.
+    const first = await logActivity({
+      title: 'Diminishing multi-allocation',
+      playerXp: 100,
+      category: 'Testing',
+      allocations: [
+        { targetType: 'attribute', targetId: 'attr-character', targetName: 'Character', xp: 100 },
+      ],
+    });
+    expect(first.status).toBe(201);
+    expect(first.body.activity.playerXp).toBe(100);
+
+    // Second similar activity: multiplier = 0.65 (step 0.35, prior = 1).
+    // playerXp = 65. Allocations [67, 67, 66] → diminished [44, 44, 43] → sum 131.
+    // Parity rebalance to 130 (2 × 65): gap handling adjusts first allocation.
+    const second = await logActivity({
+      title: 'Diminishing multi-allocation',
+      playerXp: 100,
+      category: 'Testing',
+      allocations: [
+        { targetType: 'attribute', targetId: 'attr-character', targetName: 'Character', xp: 67 },
+        { targetType: 'attribute', targetId: 'attr-character', targetName: 'Character', xp: 67 },
+        { targetType: 'attribute', targetId: 'attr-character', targetName: 'Character', xp: 66 },
+      ],
+    });
+    expect(second.status).toBe(201);
+    expect(second.body.activity.playerXp).toBe(65); // 100 × 0.65
+
+    const attrGain = attrXp('attr-character') - beforeAttr;
+    // First activity: 200 attr XP. Second: 130 attr XP. Total: 330 = 2 × 165.
+    expect(attrGain).toBe(330);
+    expect(playerXp() - beforePlayer).toBe(165); // 100 + 65
+
+    // Verify persisted allocations match actual XP transactions (no discrepancy).
+    const activityId = second.body.activity.id as string;
+    const allocations = ctx.db
+      .prepare('SELECT target_id, xp FROM activity_allocations WHERE activity_id = ?')
+      .all(activityId) as Array<{ target_id: string; xp: number }>;
+    const persistedTotal = allocations.reduce((sum, a) => sum + a.xp, 0);
+    expect(persistedTotal).toBe(130); // 2 × 65
+
+    const transactions = ctx.db
+      .prepare('SELECT delta FROM xp_transactions WHERE activity_id = ? AND target_type = ?')
+      .all(activityId, 'attribute') as Array<{ delta: number }>;
+    const transactionTotal = transactions.reduce((sum, t) => sum + t.delta, 0);
+    expect(transactionTotal).toBe(130); // matches persisted allocations
+  });
+
+  it('applies 35% skill spillover after diminishing returns', async () => {
+    const sub = await inject('POST', '/api/sub-attributes', {
+      attributeId: 'attr-lifestyle',
+      name: 'Diminishing Spillover Sub',
+    });
+    expect(sub.status).toBe(201);
+    const subId = sub.body.subAttribute.id as string;
+
+    const skill = await inject('POST', '/api/skills', {
+      name: 'Diminishing Spillover Skill',
+      subAttributeId: subId,
+    });
+    expect(skill.status).toBe(201);
+    const skillId = skill.body.skill.id as string;
+
+    const beforeSkillXp = (
+      ctx.db.prepare('SELECT lifetime_xp FROM skills WHERE id = ?').get(skillId) as { lifetime_xp: number }
+    ).lifetime_xp;
+    const beforeSubXp = (
+      ctx.db.prepare('SELECT lifetime_xp FROM sub_attributes WHERE id = ?').get(subId) as { lifetime_xp: number }
+    ).lifetime_xp;
+
+    // First activity establishes the fingerprint.
+    const first = await logActivity({
+      title: 'Diminishing spillover',
+      playerXp: 100,
+      category: 'Testing',
+      allocations: [{ targetType: 'skill', targetId: skillId, targetName: 'Diminishing Spillover Skill', xp: 100 }],
+    });
+    expect(first.status).toBe(201);
+
+    // Second similar activity: multiplier 0.65. Skill allocation 100 → 65.
+    // Spillover = floor(65 × 0.35) = 22.
+    const second = await logActivity({
+      title: 'Diminishing spillover',
+      playerXp: 100,
+      category: 'Testing',
+      allocations: [{ targetType: 'skill', targetId: skillId, targetName: 'Diminishing Spillover Skill', xp: 100 }],
+    });
+    expect(second.status).toBe(201);
+    expect(second.body.activity.playerXp).toBe(65);
+
+    const skillGain = (
+      ctx.db.prepare('SELECT lifetime_xp FROM skills WHERE id = ?').get(skillId) as { lifetime_xp: number }
+    ).lifetime_xp - beforeSkillXp;
+    // First: 200 skill XP (2 × 100). Second: 65 × 2 = 130 skill XP (parity scales skill to 2×player).
+    expect(skillGain).toBe(330);
+
+    const subGain = (
+      ctx.db.prepare('SELECT lifetime_xp FROM sub_attributes WHERE id = ?').get(subId) as { lifetime_xp: number }
+    ).lifetime_xp - beforeSubXp;
+    // First spillover: floor(200 × 0.35) = 70. Second: floor(130 × 0.35) = 45. Total: 115.
+    expect(subGain).toBe(115);
+  });
+
+  it('exactly reverses multi-allocation activity with spillover and diminishing', async () => {
+    const sub = await inject('POST', '/api/sub-attributes', {
+      attributeId: 'attr-financial',
+      name: 'Reversal Multi Sub',
+    });
+    expect(sub.status).toBe(201);
+    const subId = sub.body.subAttribute.id as string;
+
+    const skill = await inject('POST', '/api/skills', {
+      name: 'Reversal Multi Skill',
+      subAttributeId: subId,
+    });
+    expect(skill.status).toBe(201);
+    const skillId = skill.body.skill.id as string;
+
+    // First activity to establish fingerprint for diminishing.
+    await logActivity({
+      title: 'Reversal multi full',
+      playerXp: 100,
+      category: 'Testing',
+      allocations: [
+        { targetType: 'attribute', targetId: 'attr-financial', targetName: 'Financial', xp: 100 },
+        { targetType: 'skill', targetId: skillId, targetName: 'Reversal Multi Skill', xp: 100 },
+      ],
+    });
+
+    // Snapshot state after first activity.
+    const beforeSkillXp = (
+      ctx.db.prepare('SELECT lifetime_xp FROM skills WHERE id = ?').get(skillId) as { lifetime_xp: number }
+    ).lifetime_xp;
+    const beforeSubXp = (
+      ctx.db.prepare('SELECT lifetime_xp FROM sub_attributes WHERE id = ?').get(subId) as { lifetime_xp: number }
+    ).lifetime_xp;
+    const beforeAttr = attrXp('attr-financial');
+    const beforePlayer = playerXp();
+
+    // Second similar activity: multiplier 0.65.
+    // playerXp = 65. Allocations: attr 100→65, skill 100→65.
+    // Parity: attr gets 65, skill gets 65. Total attr+skill = 130 = 2 × 65.
+    // Skill spillover: floor(65 × 0.35) = 22 to sub-attribute.
+    const created = await logActivity({
+      title: 'Reversal multi full',
+      playerXp: 100,
+      category: 'Testing',
+      allocations: [
+        { targetType: 'attribute', targetId: 'attr-financial', targetName: 'Financial', xp: 100 },
+        { targetType: 'skill', targetId: skillId, targetName: 'Reversal Multi Skill', xp: 100 },
+      ],
+    });
+    expect(created.status).toBe(201);
+    expect(created.body.activity.playerXp).toBe(65);
+
+    const activityId = created.body.activity.id as string;
+
+    // Verify state after award (second activity only).
+    expect(
+      (ctx.db.prepare('SELECT lifetime_xp FROM skills WHERE id = ?').get(skillId) as { lifetime_xp: number })
+        .lifetime_xp - beforeSkillXp,
+    ).toBe(65); // skill allocation after diminishing: 65 (total attr+skill = 130 = 2 × 65)
+    expect(
+      (ctx.db
+        .prepare('SELECT lifetime_xp FROM sub_attributes WHERE id = ?')
+        .get(subId) as { lifetime_xp: number }).lifetime_xp - beforeSubXp,
+    ).toBe(22); // floor(65 × 0.35)
+    expect(attrXp('attr-financial') - beforeAttr).toBe(65);
+    expect(playerXp() - beforePlayer).toBe(65);
+
+    // Verify persisted allocations match transactions.
+    const allocations = ctx.db
+      .prepare('SELECT target_type, xp FROM activity_allocations WHERE activity_id = ?')
+      .all(activityId) as Array<{ target_type: string; xp: number }>;
+    const persistedTotal = allocations.reduce((sum, a) => sum + a.xp, 0);
+    expect(persistedTotal).toBe(130); // 65 + 65 = 2 × 65
+
+    const attrTransactions = ctx.db
+      .prepare("SELECT delta FROM xp_transactions WHERE activity_id = ? AND target_type = 'attribute'")
+      .all(activityId) as Array<{ delta: number }>;
+    const attrTransactionTotal = attrTransactions.reduce((sum, t) => sum + t.delta, 0);
+    expect(attrTransactionTotal).toBe(65);
+
+    const skillTransactions = ctx.db
+      .prepare("SELECT delta FROM xp_transactions WHERE activity_id = ? AND target_type = 'skill'")
+      .all(activityId) as Array<{ delta: number }>;
+    const skillTransactionTotal = skillTransactions.reduce((sum, t) => sum + t.delta, 0);
+    expect(skillTransactionTotal).toBe(65);
+
+    // Reverse the activity.
+    const reversed = await inject('POST', `/api/activities/${activityId}/reverse`, {
+      reason: 'Full reversal test',
+    });
+    expect(reversed.status).toBe(200);
+
+    // Everything exactly back to pre-activity values.
+    expect(
+      (ctx.db.prepare('SELECT lifetime_xp FROM skills WHERE id = ?').get(skillId) as { lifetime_xp: number })
+        .lifetime_xp,
+    ).toBe(beforeSkillXp);
+    expect(
+      (ctx.db.prepare('SELECT lifetime_xp FROM sub_attributes WHERE id = ?').get(subId) as { lifetime_xp: number })
+        .lifetime_xp,
+    ).toBe(beforeSubXp);
+    expect(attrXp('attr-financial')).toBe(beforeAttr);
+    expect(playerXp()).toBe(beforePlayer);
+  });
 });

@@ -28,6 +28,12 @@ docker compose up -d
 Published on `http://127.0.0.1:3000`. Data persisted in the `liferpg-data`
 volume.
 
+**Networking:** Inside the container the server binds to `0.0.0.0:3000` so
+Docker bridge port forwarding works. The host-side publication is restricted to
+`127.0.0.1:3000:3000` — never `0.0.0.0` on the host. Native (non-Docker)
+execution binds exclusively to `127.0.0.1`; this is enforced by `config.ts`
+unless `LIFERPG_DOCKER=1` is set.
+
 ## Data directory
 
 Default locations:

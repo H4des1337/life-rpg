@@ -50,8 +50,15 @@ Builds the frontend and server bundle, then starts the production server on
 docker compose up -d
 ```
 
-Published on `http://127.0.0.1:3000` (loopback-only). Persistent data lives in the
-`liferpg-data` named volume.
+Published on `http://127.0.0.1:3000` (host-side, loopback-only). Inside the
+container the server binds to `0.0.0.0:3000` so Docker bridge port forwarding
+works; the host publication remains restricted to `127.0.0.1:3000:3000`.
+Persistent data lives in the `liferpg-data` named volume.
+
+**Networking model:**
+- Container internal: `0.0.0.0:3000` (Docker bridge interface)
+- Host publication: `127.0.0.1:3000:3000` (localhost only — never `0.0.0.0`)
+- Native (non-Docker) execution: binds exclusively to `127.0.0.1`
 
 ## Available commands
 

@@ -157,7 +157,19 @@ export function createActivity(db: Db, input: ActivityCreateInput) {
     }));
     let attributeTotal = diminishedAllocations.reduce((sum, a) => sum + a.xp, 0);
     const targetAttributeXp = playerXp * 2;
-    if (diminishedAllocations.length > 0 && attributeTotal > 0 && attributeTotal !== targetAttributeXp) {
+    // `finalAllocations` holds the exact allocations that are persisted and
+    // applied. When parity rebalancing runs, it replaces `diminishedAllocations`
+    // so the award loop, spillover, ledger and reversal all use the same values.
+    let finalAllocations: typeof diminishedAllocations = diminishedAllocations;
+    // WPF parity: when player XP is awarded, total allocation XP must equal
+    // 2 × player XP. When player XP is 0 (pure practice), allocations are
+    // left as-is — the rule only couples attribute progression to leveling.
+    if (
+      playerXp > 0 &&
+      diminishedAllocations.length > 0 &&
+      attributeTotal > 0 &&
+      attributeTotal !== targetAttributeXp
+    ) {
       const factor = targetAttributeXp / attributeTotal;
       const adjusted = diminishedAllocations.map((a) => ({
         ...a,
@@ -167,9 +179,11 @@ export function createActivity(db: Db, input: ActivityCreateInput) {
       if (attributeTotal !== targetAttributeXp && adjusted.length > 0) {
         const gap = targetAttributeXp - attributeTotal;
         adjusted[0] = { ...adjusted[0], xp: Math.max(0, adjusted[0].xp + gap) };
+        attributeTotal = adjusted.reduce((sum, a) => sum + a.xp, 0);
       }
+      finalAllocations = adjusted;
     }
-    for (const allocation of diminishedAllocations) {
+    for (const allocation of finalAllocations) {
       db.prepare(
         'INSERT INTO activity_allocations (id, activity_id, target_type, target_id, target_name, xp, weight, rationale, confidence) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       ).run(
