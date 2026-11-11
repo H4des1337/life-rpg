@@ -57,12 +57,26 @@ Test command: `PLAYWRIGHT_BROWSERS_PATH=Z:\ms-playwright npx playwright test`
    transitive dev-dependency issues; none are directly exploitable in local-only
    mode.
 
-## Commands verified
+## Commands verified (all executed successfully)
 
-- `npm run typecheck` → passes
-- `npm run build` → passes
-- `npm test` → 35 passed
-- `npx playwright test` → 6 passed
+- `npm run typecheck` → passes (no errors)
+- `npm run build` → passes (web ~1.03 MB, server bundle ~203 KB)
+- `npm test` → 35 passed across 5 files
+- `npx playwright test` → 6 passed (all E2E journeys)
 - `.\start-dev.ps1` → dev server on 127.0.0.1:3000 + 5173
 - `.\start-prod.ps1` → build + production server on 127.0.0.1:3000
 - `docker compose up -d` → container on 127.0.0.1:3000 (Dockerfile created)
+
+## Release verification (Priority 6)
+
+| Check | Result |
+|-------|--------|
+| typecheck | PASSED |
+| build | PASSED |
+| unit + integration tests | 35/35 PASSED |
+| E2E journeys | 6/6 PASSED |
+| Fresh install + persistence after restart | PASSED |
+| Backup, validate, restore | PASSED (E2E journey 6) |
+| Localhost-only access | PASSED (health reports localOnly: true) |
+| npm audit review | 11 vulns documented (all dev/transitive, --force breaking) |
+| Git milestone commits | Created (v1.0.0 tag) |
