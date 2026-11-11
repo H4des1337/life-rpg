@@ -18,7 +18,7 @@ Test command: `PLAYWRIGHT_BROWSERS_PATH=Z:\ms-playwright npx playwright test`
 
 ## Unit / integration test results
 
-`npm test` — 6 files, 50 tests, all passing:
+`npm test` — 6 files, 50 tests, all passing (verified both in working project and fresh-extracted source ZIP):
 
 | File | Tests |
 |------|-------|
@@ -29,13 +29,25 @@ Test command: `PLAYWRIGHT_BROWSERS_PATH=Z:\ms-playwright npx playwright test`
 | `apps/web/src/components/ui.test.tsx` | 7 |
 | `apps/web/src/components/CharacterArt.test.tsx` | 4 |
 
-## Typecheck
+## Source ZIP verification
 
-`npm run typecheck` — passes with no errors.
+`Z:\LIFE_RPG_WEB_SOURCE_v1.0.2.zip` (289,192 bytes) extracted to temp directory:
 
-## Production build
-
-`npm run build` — passes. Web bundle ~1.03 MB (chunk size warning only).
+| Check | Result |
+|-------|--------|
+| npm ci | PASSED |
+| npm run typecheck | PASSED |
+| npm run build | PASSED |
+| npm test | 50/50 PASSED |
+| npx playwright test | 6/6 PASSED |
+| No node_modules in ZIP | VERIFIED |
+| No dist directories in ZIP | VERIFIED |
+| No .env/secrets in ZIP | VERIFIED |
+| No databases in ZIP | VERIFIED |
+| Required directories present | VERIFIED (apps/web, apps/server, packages/domain, packages/shared) |
+| Required manifests present | VERIFIED (all 6 package.json + root package-lock.json) |
+| Migrations present | VERIFIED (apps/server/migrations/001_init.sql) |
+| Build scripts present | VERIFIED (scripts/copy-migrations.mjs, etc.) |
 
 ## Docker configuration
 
@@ -44,6 +56,8 @@ Test command: `PLAYWRIGHT_BROWSERS_PATH=Z:\ms-playwright npx playwright test`
 - Docker host publication: `127.0.0.1:3000:3000` only (localhost-only)
 - `LIFERPG_DOCKER=1` flag relaxes native loopback-only restriction inside containers
 - Docker build not verified on this machine (Docker not installed); configuration reviewed
+- Dockerfile runtime stage fixed: `apps/server/package.json` copied before workspace install
+- .dockerignore fixed: removed broad `*.mjs` exclusion blocking `copy-migrations.mjs`
 
 ## Known issues / notes
 
@@ -73,7 +87,11 @@ Test command: `PLAYWRIGHT_BROWSERS_PATH=Z:\ms-playwright npx playwright test`
 - `.\start-prod.ps1` → build + production server on 127.0.0.1:3000
 - `docker compose up -d` → not executed (Docker not installed on this machine)
 
-## Release verification (Priority 6)
+## Source ZIP verified from fresh extraction
+
+- `Z:\LIFE_RPG_WEB_SOURCE_v1.0.2.zip` → npm ci, typecheck, build, test, E2E all PASSED
+
+## Release verification (Priority 8)
 
 | Check | Result |
 |-------|--------|
@@ -81,11 +99,13 @@ Test command: `PLAYWRIGHT_BROWSERS_PATH=Z:\ms-playwright npx playwright test`
 | build | PASSED |
 | unit + integration tests | 50/50 PASSED |
 | E2E journeys | 6/6 PASSED |
+| Source ZIP (fresh extraction: ci, typecheck, build, test, E2E) | ALL PASSED |
 | Fresh install + persistence after restart | PASSED |
 | Backup, validate, restore | PASSED (E2E journey 6) |
 | Localhost-only access | PASSED (health reports localOnly: true) |
 | npm audit review | 11 vulns documented (all dev/transitive, --force breaking) |
-| Git milestone commits | Created (v1.0.0 tag) |
+| Git milestone commits | Created (v1.0.0, v1.0.1 tags) |
 | XP allocation fix (activities.ts) | VERIFIED — corrected allocations used throughout |
 | Docker networking (0.0.0.0 container, 127.0.0.1 host) | CONFIGURED — not execution-tested |
 | Native loopback enforcement (config.ts) | VERIFIED — 10 config tests pass |
+| Version metadata (1.0.2) | VERIFIED across all manifests + lockfile |

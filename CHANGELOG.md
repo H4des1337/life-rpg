@@ -1,41 +1,48 @@
 # LIFE RPG — Changelog
 
-## Unreleased
+# LIFE RPG — Changelog
+
+## 1.0.2
 
 ### Added
-- WPF-parity enforcement: attribute XP = 2 × player XP at the validation gate
-  and re-balanced after diminishing returns at activity creation time
-- Diminishing returns now consistently applied to player XP and attribute/skill
-  allocations (previously player XP only)
-- Regression tests for progression invariants (5 new tests in modules.test.ts)
-- 5 new Playwright E2E journeys: onboarding, activity approval, quest milestones,
-  journal markdown + XSS sanitisation, inventory attachment + SHA-256,
-  backup restore + safety snapshot
-- Dockerfile (multi-stage, loopback-only, node:22-alpine)
-- docker-compose.yml (publishes 127.0.0.1:3000:3000, named data volume)
-- .dockerignore, .env.example
-- Windows scripts: start-dev.ps1, start-prod.ps1, reset-e2e.ps1
-- Documentation: ARCHITECTURE.md, DATABASE_SCHEMA.md, PROGRESSION_SYSTEM.md,
-  AI_SYSTEM.md, BUILD_LOG.md, CHANGELOG.md, TODO.md, HANDOFF.md, README.md
-- `LIFERPG_ALLOW_REMOTE_HOSTS` tightened: comma-separated allowlist instead of
-  blanket on/off switch; loopback always allowed
-- `ConfirmOptions.note` field + restore-specific confirmation text in Settings
-
-### Changed
-- E2E journeys now complete onboarding first (each test gets a fresh browser
-  context); selectors use `.first()` where multiple buttons match
-- Journal XSS check scoped to `.markdown script` (page has legitimate script tags)
+- Clean source distribution ZIP (`LIFE_RPG_WEB_SOURCE_v1.0.2.zip`) with buildable
+  source excluding node_modules, dist, runtime data, and secrets
 
 ### Fixed
-- E2E `getByText('Lifetime XP')` strict-mode violation → unique subtitle text
-- E2E "Log" button → "Log activity" (header button is `lg:hidden`; sidebar used on
-  desktop)
-- E2E "New entry" strict-mode violation → `.first()`
-- E2E `getByText('local only')` → `{ exact: true }`
-- E2E `getByText('proof.png')` → `{ exact: true }`
-- E2E "Backups & Data" → `role="tab"` (Tabs component renders tabs, not buttons)
-- E2E XSS script check → scoped to `.markdown`
-- Typecheck error in CharacterArt.test.tsx (incomplete Appearance object)
+- Dockerfile runtime stage: copy `apps/server/package.json` before
+  `npm install --workspace=@liferpg/server --omit=dev` so npm recognizes the
+  workspace (previously failed with "No workspaces found")
+- `.dockerignore`: removed broad `*.mjs` exclusion that blocked
+  `apps/server/scripts/copy-migrations.mjs`; replaced with precise exclusions
+  for node_modules, dist, databases, WAL/SHM files, backups, secrets, and
+  test artifacts while preserving all source files, manifests, and build scripts
+- Version metadata bumped to 1.0.2 across root, server, and web package
+  manifests and package-lock.json
+
+### Security
+- Docker networking preserved: container binds 0.0.0.0 internally
+  (LIFERPG_DOCKER=1); host publication remains 127.0.0.1:3000:3000 only
+- Native execution binds exclusively to 127.0.0.1; non-loopback HOST rejected
+  unless LIFERPG_DOCKER=1
+
+## 1.0.1
+
+### Added
+- XP allocation fix: corrected allocations used for activity_allocations insert,
+  target application, skill spillover, XP ledger, and exact reversal
+- Docker networking distinction: container binds 0.0.0.0 internally, host
+  publishes 127.0.0.1:3000:3000 only; LIFERPG_DOCKER=1 flag
+- Docker frontend build: devDependencies (Vite, @vitejs/plugin-react) included
+  in web-build stage
+- Native local-only binding enforcement in config.ts: non-loopback HOST rejected
+  unless LIFERPG_DOCKER=1
+- 7 new progression regression tests (multi-allocation parity, diminishing +
+  spillover, exact reversal, persisted vs transaction matching)
+- 10 new config tests for native/Docker bind modes
+
+### Changed
+- BUILD_LOG, TODO, README, ARCHITECTURE, HANDOFF updated with Docker networking
+  distinction and mojibake status
 
 ### Security
 - `LIFERPG_ALLOW_REMOTE_HOSTS` changed from blanket allow-all to named allowlist

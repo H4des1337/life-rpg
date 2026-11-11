@@ -1,6 +1,6 @@
 # LIFE RPG — TODO
 
-## Release verification (complete)
+## Release verification (complete — v1.0.2)
 
 - [x] Verify `npm run typecheck` passes
 - [x] Verify `npm run build` passes
@@ -10,22 +10,30 @@
 - [x] Verify backup, validation and restore
 - [x] Verify localhost-only access (no 0.0.0.0 exposure)
 - [x] Review `npm audit` findings (11 vulns, all dev/transitive — documented, not fixed)
-- [x] Create Git milestone commits (v1.0.0)
-- [x] Create v1.0.1 patch tag after second-pass fixes
+- [x] Create Git milestone commits (v1.0.0, v1.0.1)
+- [x] Create v1.0.2 tag on final release commit
+- [x] Verify source ZIP from fresh extraction (npm ci, typecheck, build, test, E2E all PASSED)
 - [x] Produce final report with actual test results and known limitations
 
-## Critical fixes applied (v1.0.1)
+## Critical fixes applied
 
 - [x] Fix XP allocation application in activities.ts — corrected allocations now
   used for insert, apply, spillover, ledger, and reversal
-- [x] Fix Docker networking — container binds 0.0.0.0 internally, host publishes
-  127.0.0.1:3000:3000 only
+- [x] Fix Docker networking — container binds 0.0.0.0 internally; host publishes
+  127.0.0.1:3000:3000 only; LIFERPG_DOCKER=1 flag
 - [x] Fix Docker frontend build — devDependencies included for Vite build
+- [x] Fix Docker runtime workspace installation — copy apps/server/package.json
+  before npm install --workspace=@liferpg/server
+- [x] Fix .dockerignore — removed broad *.mjs exclusion blocking copy-migrations.mjs
 - [x] Enforce native local-only binding in config.ts — non-loopback HOST rejected
   unless LIFERPG_DOCKER=1
 - [x] Add config tests — 10 tests for native/Docker bind modes
-- [x] Add progression regression tests — 7 new tests for multi-allocation parity,
-  diminishing + spillover, exact reversal, persisted vs transaction matching
+- [x] Add progression regression tests — multi-allocation parity, diminishing +
+  spillover, exact reversal, persisted vs transaction matching
+- [x] Bump version metadata to 1.0.2 across all manifests + package-lock.json
+- [x] Update CHANGELOG.md with v1.0.2 section
+- [x] Create clean source ZIP (Z:\LIFE_RPG_WEB_SOURCE_v1.0.2.zip)
+- [x] Verify source ZIP from fresh extraction
 
 ## Code quality
 
@@ -40,7 +48,7 @@
 - [ ] Analytics dashboard refinements
 - [ ] Additional AI provider types
 
-## Docker verification (not execution-tested)
+## Docker verification (not execution-tested — Docker not installed)
 
 - [ ] docker compose build --no-cache — not executed (Docker not installed)
 - [ ] docker compose up — not executed (Docker not installed)

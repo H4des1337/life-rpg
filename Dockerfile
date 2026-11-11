@@ -37,8 +37,11 @@ RUN npm run build -w @liferpg/server
 FROM node:22-alpine AS runner
 WORKDIR /app
 
-# Runtime-only dependencies
+# Copy root manifest and lockfile plus the server workspace manifest so npm
+# can recognize the workspace and install its production dependencies.
 COPY package.json package-lock.json ./
+COPY apps/server/package.json ./apps/server/package.json
+# Install server workspace production dependencies only (no devDependencies).
 RUN npm install --workspace=@liferpg/server --omit=dev
 
 # Copy built server bundle and migrations

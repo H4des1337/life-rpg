@@ -1,5 +1,9 @@
 # LIFE RPG — Handoff
 
+## Version
+
+Current release: **v1.0.2** (tags: v1.0.0, v1.0.1, v1.0.2)
+
 ## Operational summary
 
 LIFE RPG is a local-first, single-user application. It runs on `127.0.0.1:3000`
@@ -33,6 +37,17 @@ Docker bridge port forwarding works. The host-side publication is restricted to
 `127.0.0.1:3000:3000` — never `0.0.0.0` on the host. Native (non-Docker)
 execution binds exclusively to `127.0.0.1`; this is enforced by `config.ts`
 unless `LIFERPG_DOCKER=1` is set.
+
+## Installing from source ZIP
+
+1. Extract `LIFE_RPG_WEB_SOURCE_v1.0.2.zip` to a clean directory.
+2. Run `npm ci` to install dependencies reproducibly.
+3. Run `npm run build` to build the frontend and server bundle.
+4. Run `.\start-prod.ps1` to start the production server.
+5. Access `http://127.0.0.1:3000`.
+
+The source ZIP excludes node_modules, dist directories, runtime databases,
+backups, and secrets — it contains only buildable source.
 
 ## Data directory
 
@@ -91,6 +106,17 @@ To migrate AI credentials to another machine:
 - Host-header and Origin protections reject non-loopback requests by default.
 - No telemetry, no cloud, no external dependencies unless AI providers are
   explicitly configured.
+
+## Known limitations
+
+- Docker build/run could not be execution-tested on this machine (Docker not
+  installed). Dockerfile and docker-compose.yml are configured correctly but
+  not verified by running `docker compose build` / `docker compose up`.
+- `npm audit` reports 11 vulnerabilities (5 moderate, 4 high, 2 critical) in
+  dev/transitive dependencies. Fixes require `--force` (breaking changes).
+  App is local-only with no public attack surface; documented, not fixed.
+- Source contains mojibake `Â·` (double-encoded middle dot) in several files.
+  Files are valid UTF-8; cosmetic only, does not affect functionality.
 
 ## Support
 
