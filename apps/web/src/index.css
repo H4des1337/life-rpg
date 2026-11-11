@@ -1,0 +1,204 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    @apply bg-ink-950 text-ink-100 font-sans antialiased;
+    background-image:
+      radial-gradient(1200px 700px at 12% -10%, rgba(207, 169, 96, 0.08), transparent 60%),
+      radial-gradient(900px 600px at 95% 0%, rgba(111, 191, 160, 0.045), transparent 55%),
+      linear-gradient(180deg, #07080b 0%, #080a0e 55%, #07080b 100%);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: rgba(207, 169, 96, 0.28);
+    color: #fff;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #2b3342 transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #2b3342;
+    border-radius: 8px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-lg border border-white/[0.06] bg-ink-900/70 shadow-panel backdrop-blur-[2px];
+  }
+
+  .panel-pad {
+    @apply p-5;
+  }
+
+  .label {
+    @apply mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-400;
+  }
+
+  .input {
+    @apply w-full rounded-md border border-white/[0.08] bg-ink-950/70 px-3 py-2 text-sm text-ink-100
+      placeholder:text-ink-500 outline-none transition
+      focus:border-gold-500/60 focus:ring-2 focus:ring-gold-500/15;
+  }
+
+  .select {
+    @apply input appearance-none pr-8;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7688' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+  }
+
+  .btn {
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-md border border-transparent
+      px-3.5 py-2 text-sm font-medium transition
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950
+      disabled:cursor-not-allowed disabled:opacity-45;
+  }
+
+  .btn-primary {
+    @apply btn bg-gold-500 text-ink-950 hover:bg-gold-400;
+  }
+
+  .btn-ghost {
+    @apply btn border-white/[0.08] bg-white/[0.02] text-ink-200 hover:border-white/[0.14] hover:bg-white/[0.05];
+  }
+
+  .btn-danger {
+    @apply btn border-blood/30 bg-blood/10 text-[#e6a0a0] hover:bg-blood/20;
+  }
+
+  .btn-outline {
+    @apply btn border-gold-500/30 bg-transparent text-gold-400 hover:border-gold-500/60 hover:bg-gold-500/[0.06];
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-0.5 text-[11px] text-ink-300;
+  }
+
+  .divider {
+    @apply h-px w-full bg-white/[0.06];
+  }
+
+  .eyebrow {
+    @apply text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-500/80;
+  }
+
+  .link-muted {
+    @apply text-ink-400 underline-offset-4 transition hover:text-gold-400 hover:underline;
+  }
+
+  .scroll-panel {
+    @apply overflow-y-auto overscroll-contain;
+  }
+
+  .markdown {
+    @apply text-sm leading-7 text-ink-200;
+  }
+
+  .markdown h1,
+  .markdown h2,
+  .markdown h3 {
+    @apply mb-2 mt-5 font-display text-ink-100;
+  }
+
+  .markdown h1 {
+    @apply text-xl;
+  }
+
+  .markdown h2 {
+    @apply text-lg;
+  }
+
+  .markdown h3 {
+    @apply text-base;
+  }
+
+  .markdown p {
+    @apply my-2;
+  }
+
+  .markdown ul {
+    @apply my-2 list-disc pl-5;
+  }
+
+  .markdown ol {
+    @apply my-2 list-decimal pl-5;
+  }
+
+  .markdown code {
+    @apply rounded bg-ink-800 px-1 py-0.5 font-mono text-[12px] text-gold-400;
+  }
+
+  .markdown pre {
+    @apply my-3 overflow-x-auto rounded-md border border-white/[0.06] bg-ink-950 p-3;
+  }
+
+  .markdown pre code {
+    @apply bg-transparent p-0 text-ink-200;
+  }
+
+  .markdown blockquote {
+    @apply my-3 border-l-2 border-gold-500/40 pl-3 text-ink-400;
+  }
+
+  .markdown a {
+    @apply text-gold-400 underline underline-offset-4;
+  }
+
+  .markdown table {
+    @apply my-3 w-full border-collapse text-xs;
+  }
+
+  .markdown th,
+  .markdown td {
+    @apply border border-white/[0.08] px-2 py-1 text-left;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

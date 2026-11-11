@@ -1,0 +1,26 @@
+{
+  "name": "@liferpg/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --packages=external --alias:@liferpg/domain=../../packages/domain/src/index.ts --alias:@liferpg/shared=../../packages/shared/src/index.ts --outfile=dist/index.js && node scripts/copy-migrations.mjs",
+    "start": "node dist/index.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fastify/multipart": "^9.0.3",
+    "@fastify/static": "^8.0.4",
+    "adm-zip": "^0.5.16",
+    "better-sqlite3": "^11.8.1",
+    "fastify": "^5.2.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
+    "@types/better-sqlite3": "^7.6.12",
+    "tsx": "^4.19.2"
+  }
+}

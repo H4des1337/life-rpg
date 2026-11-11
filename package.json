@@ -1,0 +1,44 @@
+{
+  "name": "life-rpg-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "LIFE RPG — a local-first life progression RPG",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,web -c cyan,magenta \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "npm run dev -w @liferpg/server",
+    "dev:web": "npm run dev -w @liferpg/web",
+    "build": "npm run build -w @liferpg/web && npm run build -w @liferpg/server",
+    "start": "node apps/server/dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc -p tsconfig.check.json --noEmit",
+    "data:dir": "node scripts/print-data-dir.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/node": "^22.10.5",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
+    "esbuild": "^0.24.2",
+    "jsdom": "^25.0.1",
+    "postcss": "^8.4.49",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  }
+}

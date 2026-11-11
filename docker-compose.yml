@@ -1,0 +1,31 @@
+# LIFE RPG — Docker Compose
+# Local-only: publishes 127.0.0.1:3000:3000 (NOT 0.0.0.0).
+# Persistent data and attachments are stored in named volumes.
+version: '3.8'
+
+services:
+  liferpg:
+    build: .
+    container_name: liferpg
+    # Loopback-only publication: host-side binding is 127.0.0.1:3000
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - HOST=127.0.0.1
+      - PORT=3000
+      - LIFERPG_DATA_DIR=/data/liferpg
+      - LIFERPG_DISABLE_AUTO_BACKUP=0
+    volumes:
+      # Persistent database, settings, encrypted keys, backups
+      - liferpg-data:/data/liferpg
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  liferpg-data:
+    driver: local
