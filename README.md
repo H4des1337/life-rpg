@@ -1,109 +1,151 @@
-# LIFE RPG Web
+# LIFE RPG
 
-A complete, polished, persistent, local-first life-progression RPG web application.
-Track your XP, levels, attributes, skills, quests, achievements, journal, inventory
-and more — everything stays on your machine. No cloud, no telemetry, no browser
-database as source of truth.
+**A local-first life-progression RPG built as an independent student software project.**
 
-## Stack
+LIFE RPG turns personal development into a progression system. Log real activities, build skills, complete quests, and track your growth through experience points, attributes, levels, and achievements.
 
-- **Frontend:** React 18 + TypeScript + Vite + Tailwind CSS
-- **Server:** Node.js + Fastify + TypeScript (esbuild-bundled)
-- **Database:** SQLite via `better-sqlite3` with hand-written SQL migrations
-- **Validation:** Zod schemas (shared between server and client)
-- **Testing:** Vitest + React Testing Library + Playwright
-- **Container:** Docker / Docker Compose (loopback-only)
+The goal is to make progress visible without turning personal data into a cloud service: the application is designed to run on your own computer, with SQLite as its persistent source of truth.
 
-## Local-first security (by design)
+> **Project status:** Active development. The core application, local persistence, and Docker deployment have been implemented and manually exercised. Features and documentation may continue to evolve.
 
-- Default bind: **127.0.0.1** — never `0.0.0.0`
-- Docker publishes: **127.0.0.1:3000:3000** (localhost-only)
-- Host-header and Origin protections reject non-loopback requests
-- API keys encrypted at rest (AES-256-GCM)
-- AI never writes progression values directly; domain validation gate + user approval
-- Persistent data under `%LOCALAPPDATA%\LIFE_RPG_WEB` (configurable via `LIFERPG_DATA_DIR`)
+## What it does
 
-## Quick start
+- **Character progression** — a player profile, levels, lifetime XP, and attributes.
+- **Skill trees** — organize skills into nested branches and develop them over time.
+- **Activity logging** — record real-world activities and review proposed progression changes before approving them.
+- **Quests and achievements** — define goals and recognize milestones.
+- **Journal and notes** — keep personal reflections and supporting context alongside progression.
+- **Inventory and attachments** — organize items and associated uploads.
+- **Analytics and timeline** — review activity and progression over time.
+- **Backups and restore** — create local safety snapshots of application data.
 
-### Development (Windows PowerShell)
+The progression system is intended to reward consistent, meaningful effort rather than simply counting time spent in the application.
+
+## Technology
+
+| Area | Technologies |
+| --- | --- |
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS |
+| Backend | Node.js, Fastify, TypeScript |
+| Database | SQLite with `better-sqlite3` |
+| Validation | Zod, with shared schemas |
+| Build | npm workspaces, Vite, esbuild |
+| Tests | Vitest, React Testing Library, Playwright |
+| Deployment | Docker and Docker Compose |
+
+The codebase is organized as a TypeScript monorepo:
+
+```text
+apps/
+  web/          React application
+  server/       Fastify API and persistence layer
+packages/       Shared types, schemas, and domain logic
+scripts/        Development and utility scripts
+```
+
+## Run locally
+
+### Prerequisites
+
+- Node.js 22 or a compatible Node.js 22 release
+- npm
+- Windows PowerShell for the included Windows helper scripts
+
+### Development
+
+Clone the repository, enter the project directory, and install dependencies:
 
 ```powershell
-# Clone or open this folder, then:
+git clone https://github.com/H4des1337/life-rpg.git
+cd life-rpg
+npm ci
+npm run dev
+```
+
+The development setup starts the API and Vite development server. By default:
+
+- Web application: [http://127.0.0.1:5173](http://127.0.0.1:5173)
+- API server: [http://127.0.0.1:3000](http://127.0.0.1:3000)
+
+On Windows, the repository also includes helper scripts:
+
+```powershell
 .\start-dev.ps1
 ```
 
-This starts the API server on `http://127.0.0.1:3000` and the Vite dev server on
-`http://127.0.0.1:5173`.
-
-### Production (Windows PowerShell)
+For a local production build and run:
 
 ```powershell
 .\start-prod.ps1
 ```
 
-Builds the frontend and server bundle, then starts the production server on
-`http://127.0.0.1:3000`.
-
 ### Docker
 
+Docker is an alternative way to run the production application:
+
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
-Published on `http://127.0.0.1:3000` (host-side, loopback-only). Inside the
-container the server binds to `0.0.0.0:3000` so Docker bridge port forwarding
-works; the host publication remains restricted to `127.0.0.1:3000:3000`.
-Persistent data lives in the `liferpg-data` named volume.
+Open [http://localhost:3000](http://localhost:3000).
 
-**Networking model:**
-- Container internal: `0.0.0.0:3000` (Docker bridge interface)
-- Host publication: `127.0.0.1:3000:3000` (localhost only — never `0.0.0.0`)
-- Native (non-Docker) execution: binds exclusively to `127.0.0.1`
+The Compose configuration publishes the service on `127.0.0.1:3000`, restricting host access to the local machine. The application listens on the container interface internally so Docker port forwarding can reach it.
 
-## Available commands
+Docker stores persistent application data in the named volume `liferpg-data`, mounted at `/data/liferpg` inside the container. Stopping or recreating the container does not remove that volume. **Do not use `docker compose down -v` unless you intentionally want to delete the application's persistent volume.**
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start server + web dev server (concurrently) |
-| `npm run build` | Build web (Vite) + server (esbuild) |
-| `npm start` | Start production server (`node apps/server/dist/index.js`) |
-| `npm test` | Run unit + integration tests (Vitest) |
-| `npm run typecheck` | TypeScript project check |
-| `npx playwright test` | Run Playwright E2E journeys |
-| `npm run data:dir` | Print the resolved data directory |
+## Data storage and privacy
 
-## Data directory
+LIFE RPG is designed around local ownership of personal data:
 
-Default: `%LOCALAPPDATA%\LIFE_RPG_WEB` (Windows) or `~/.local/share/LIFE_RPG_WEB`
-(Linux/macOS). Override with `LIFERPG_DATA_DIR`.
+- SQLite is the persistent source of truth; the browser is not the primary database.
+- In a native run, the default data directory is `%LOCALAPPDATA%\LIFE_RPG_WEB` on Windows or `~/.local/share/LIFE_RPG_WEB` on Linux and macOS.
+- Set `LIFERPG_DATA_DIR` to choose a different data directory.
+- In Docker, the configured data directory is `/data/liferpg` and should be backed by the Compose volume.
+- The default Docker port publication is loopback-only. Do not expose the service publicly without reviewing and strengthening its security configuration.
 
-Contains:
-- `database/liferpg.db` — SQLite database (source of truth)
-- `backups/` — ZIP archives (manual + automatic safety snapshots)
-- `settings/secret.key` — AES-256-GCM key for encrypted API keys
-- `storage/` — inventory/journal/activity/character attachments
+The data directory contains the SQLite database, backups, settings, and uploaded application files.
 
-## Required modules
+### Optional AI integrations
 
-Profile, XP/levels, 7 seeded attributes, nested skill trees, decay, activity logging
-with heuristic/AI proposals + approval, AI providers (Ollama / OpenAI-compatible,
-optional), quests, achievements, optional streaks, analytics, journal, sticky notes,
-inventory + real uploads, timeline, original chibi SVG character, backup/restore.
+Activity analysis supports a built-in heuristic path as well as optional provider integrations, including Ollama and OpenAI-compatible endpoints. The heuristic path does not require a hosted AI service.
 
-## Documentation
+If an external AI provider is configured and used, relevant activity/context submitted for analysis is sent to that configured endpoint. The provider's own processing and retention policies then apply. Review the provider configuration and its privacy terms before enabling it, especially when using personal information. AI-generated progression is treated as a proposal for user review rather than an automatic write to progression values.
 
-| Document | Contents |
-|----------|----------|
-| `ARCHITECTURE.md` | System design, stack, monorepo layout |
-| `DATABASE_SCHEMA.md` | Tables, migrations, seeding |
-| `PROGRESSION_SYSTEM.md` | XP formula, levels, decay, 2:1 attribute rule |
-| `AI_SYSTEM.md` | AI providers, heuristic, validation gate |
-| `BUILD_LOG.md` | Build notes, test results, known issues |
-| `CHANGELOG.md` | Version history |
-| `TODO.md` | Remaining work |
-| `HANDOFF.md` | Operational handoff |
-| `README.md` | This file |
+## Useful commands
+
+Run these from the repository root:
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the web and API development servers |
+| `npm run build` | Build the frontend and backend |
+| `npm start` | Start the production server bundle |
+| `npm test` | Run the Vitest test suite |
+| `npm run typecheck` | Run the TypeScript project check |
+| `npm run test:e2e` | Run the Playwright end-to-end suite |
+| `npm run data:dir` | Print the resolved application data directory |
+
+## Project documentation
+
+Additional engineering notes are maintained in the repository:
+
+- [Architecture](ARCHITECTURE.md) — system design and monorepo layout.
+- [Database schema](DATABASE_SCHEMA.md) — tables and migrations.
+- [Progression system](PROGRESSION_SYSTEM.md) — XP, levels, decay, and attribute progression.
+- [AI system](AI_SYSTEM.md) — provider integrations, heuristic analysis, and validation.
+- [Build log](BUILD_LOG.md) — implementation and build notes.
+- [Changelog](CHANGELOG.md) — version history.
+- [TODO](TODO.md) — planned work and known follow-ups.
+- [Handoff](HANDOFF.md) — operational notes.
+
+## Motivation
+
+LIFE RPG is an exploration of how game-design ideas can support real-world self-development, combined with practical engineering work in full-stack TypeScript, data modeling, local persistence, API design, and containerized deployment.
+
+It is being developed iteratively: build a working system, use it, test the important paths, and improve the design based on what breaks or feels useful.
 
 ## License
 
-Private / internal use. Local-first by design.
+**Proprietary — All Rights Reserved.**
+
+Copyright (c) 2026 Rishab Raju. This repository is publicly accessible for viewing and evaluation only. No permission is granted to copy, modify, distribute, or otherwise reuse the software without prior written permission from the copyright holder. See [LICENSE](LICENSE) for the full notice.
